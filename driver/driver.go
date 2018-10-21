@@ -29,7 +29,6 @@ import (
 	"sync"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi/v0"
-	"github.com/digitalocean/godo"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -58,7 +57,6 @@ type Driver struct {
 	region   string
 
 	srv          *grpc.Server
-	doClient     *godo.Client
 	hcloudClient *hcloud.Client
 	mounter      Mounter
 	log          *logrus.Entry

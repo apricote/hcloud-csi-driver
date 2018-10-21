@@ -560,7 +560,7 @@ func (d *Driver) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequ
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-// DeleteSnapshost will be called by the CO to delete a snapshot.
+// DeleteSnapshot will be called by the CO to delete a snapshot.
 func (d *Driver) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
 	d.log.WithFields(logrus.Fields{
 		"req":    req,
