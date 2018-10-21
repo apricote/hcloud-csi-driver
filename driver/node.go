@@ -28,6 +28,7 @@ import (
 	"context"
 	"net/http"
 	"path/filepath"
+	"strconv"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi/v0"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ import (
 
 const (
 	diskIDPath   = "/dev/disk/by-id"
-	diskDOPrefix = "scsi-0DO_Volume_"
+	diskHCPrefix = "scsi-0HC_Volume_"
 
 	// See: https://www.digitalocean.com/docs/volumes/overview/#limits
 	maxVolumesPerNode = 7
@@ -66,12 +67,20 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		return nil, status.Error(codes.InvalidArgument, "NodeStageVolume Volume Capability must be provided")
 	}
 
-	vol, resp, err := d.doClient.Storage.GetVolume(ctx, req.VolumeId)
+	var volumeID int
+	volumeID, err := strconv.Atoi(req.VolumeId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "NodeStageVolume Volume ID can not be converted to integer")
+	}
+
+	vol, resp, err := d.hcloudClient.Volume.GetByID(ctx, volumeID)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return nil, status.Errorf(codes.NotFound, "volume %q not found", req.VolumeId)
 		}
-		return nil, err
+		// TODO: replace with actual error handling
+		return nil, status.Errorf(codes.NotFound, "volume %q not found", req.VolumeId)
+		// return nil, err
 	}
 
 	source := getDiskSource(vol.Name)
@@ -276,9 +285,10 @@ func (d *Driver) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublish
 // workload. The result of this function will be used by the CO in
 // ControllerPublishVolume.
 func (d *Driver) NodeGetId(ctx context.Context, req *csi.NodeGetIdRequest) (*csi.NodeGetIdResponse, error) {
+	// TODO(apricote): Query HCloud API for Server ID of d.hostname
 	d.log.WithField("method", "node_get_id").Info("node get id called")
 	return &csi.NodeGetIdResponse{
-		NodeId: d.nodeId,
+		NodeId: d.nodeID,
 	}, nil
 }
 
@@ -308,7 +318,7 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	d.log.WithField("method", "node_get_info").Info("node get info called")
 	return &csi.NodeGetInfoResponse{
-		NodeId:            d.nodeId,
+		NodeId:            d.nodeID,
 		MaxVolumesPerNode: maxVolumesPerNode,
 
 		// make sure that the driver works on this particular region only
@@ -321,7 +331,7 @@ func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 }
 
 // getDiskSource returns the absolute path of the attached volume for the given
-// DO volume name
+// HC volume name
 func getDiskSource(volumeName string) string {
-	return filepath.Join(diskIDPath, diskDOPrefix+volumeName)
+	return filepath.Join(diskIDPath, diskHCPrefix+volumeName)
 }

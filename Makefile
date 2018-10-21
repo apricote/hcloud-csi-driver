@@ -1,4 +1,4 @@
-NAME=do-csi-plugin
+NAME=hcloud-csi-driver
 OS ?= linux
 ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
   GIT_TREE_STATE=clean
@@ -8,7 +8,7 @@ endif
 COMMIT ?= $(shell git rev-parse HEAD)
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS ?= -X github.com/digitalocean/csi-digitalocean/driver.version=${VERSION} -X github.com/digitalocean/csi-digitalocean/driver.commit=${COMMIT} -X github.com/digitalocean/csi-digitalocean/driver.gitTreeState=${GIT_TREE_STATE}
-PKG ?= github.com/digitalocean/csi-digitalocean/cmd/do-csi-plugin
+PKG ?= github.com/digitalocean/csi-digitalocean/cmd/hcloud-csi-driver
 
 ## Bump the version in the version file. Set BUMP to [ patch | major | minor ]
 BUMP := patch
@@ -35,7 +35,7 @@ bump-version:
 .PHONY: compile
 compile:
 	@echo "==> Building the project"
-	@env CGO_ENABLED=0 GOOS=${OS} GOARCH=amd64 go build -o cmd/do-csi-plugin/${NAME} -ldflags "$(LDFLAGS)" ${PKG} 
+	@env CGO_ENABLED=0 GOOS=${OS} GOARCH=amd64 go build -o cmd/hcloud-csi-driver/${NAME} -ldflags "$(LDFLAGS)" ${PKG} 
 
 
 .PHONY: test
@@ -53,16 +53,16 @@ test-integration:
 .PHONY: build
 build:
 	@echo "==> Building the docker image"
-	@docker build -t digitalocean/do-csi-plugin:$(VERSION) cmd/do-csi-plugin -f cmd/do-csi-plugin/Dockerfile
+	@docker build -t apricote/hcloud-csi-driver:$(VERSION) cmd/hcloud-csi-driver -f cmd/hcloud-csi-driver/Dockerfile
 
 .PHONY: push
 push:
 ifeq ($(shell [[ $(BRANCH) != "master" && $(VERSION) != "dev" ]] && echo true ),true)
 	@echo "ERROR: Publishing image with a SEMVER version '$(VERSION)' is only allowed from master"
 else
-	@echo "==> Publishing digitalocean/do-csi-plugin:$(VERSION)"
-	@docker push digitalocean/do-csi-plugin:$(VERSION)
-	@echo "==> Your image is now available at digitalocean/do-csi-plugin:$(VERSION)"
+	@echo "==> Publishing apricote/hcloud-csi-driver:$(VERSION)"
+	@docker push apricote/hcloud-csi-driver:$(VERSION)
+	@echo "==> Your image is now available at apricote/hcloud-csi-driver:$(VERSION)"
 endif
 
 .PHONY: clean

@@ -27,9 +27,10 @@ import (
 
 func main() {
 	var (
-		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/com.digitalocean.csi.dobs/csi.sock", "CSI endpoint")
+		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/de.apricote.hcloud.csi.volumes/csi.sock", "CSI endpoint")
 		token    = flag.String("token", "", "DigitalOcean access token")
-		url      = flag.String("url", "https://api.digitalocean.com/", "DigitalOcean API URL")
+		url      = flag.String("url", "https://api.hetzner.cloud/v1", "Hetzner Cloud API URL")
+		region   = flag.String("region", "", "Hetzner Cloud Region")
 		version  = flag.Bool("version", false, "Print the version and exit.")
 	)
 	flag.Parse()
@@ -39,7 +40,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	drv, err := driver.NewDriver(*endpoint, *token, *url)
+	drv, err := driver.NewDriver(*endpoint, *token, *url, *region)
+
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -18,6 +18,10 @@ package driver
 
 import (
 	"encoding/json"
+	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/hetznercloud/hcloud-go/hcloud/schema"
+	"strconv"
+
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -60,30 +64,46 @@ func TestDriverSuite(t *testing.T) {
 		t.Fatalf("failed to remove unix domain socket file %s, error: %s", socket, err)
 	}
 
+	serverID := 1234567
+	fakeHCloud := &fakeHCloudAPI{
+		t:       t,
+		volumes: map[int]*schema.Volume{},
+		servers: map[int]*schema.Server{
+			serverID: {
+				ID: serverID,
+			},
+		},
+	}
+
+	tsHCloud := httptest.NewServer(fakeHCloud)
+	defer tsHCloud.Close()
+
 	// fake DO Server, not working yet ...
-	nodeId := "987654"
+	nodeID := strconv.Itoa(serverID)
 	fake := &fakeAPI{
 		t:       t,
 		volumes: map[string]*godo.Volume{},
 		droplets: map[string]*godo.Droplet{
-			nodeId: &godo.Droplet{},
+			nodeID: {},
 		},
 	}
 
 	ts := httptest.NewServer(fake)
 	defer ts.Close()
+	url, _ := url.Parse(ts.URL)
 
 	doClient := godo.NewClient(nil)
-	url, _ := url.Parse(ts.URL)
 	doClient.BaseURL = url
+	hcloudClient := hcloud.NewClient(hcloud.WithEndpoint(tsHCloud.URL))
 
 	driver := &Driver{
-		endpoint: endpoint,
-		nodeId:   nodeId,
-		region:   "nyc3",
-		doClient: doClient,
-		mounter:  &fakeMounter{},
-		log:      logrus.New().WithField("test_enabed", true),
+		endpoint:     endpoint,
+		nodeID:       nodeID,
+		region:       "fsn1",
+		doClient:     doClient,
+		hcloudClient: hcloudClient,
+		mounter:      &fakeMounter{},
+		log:          logrus.New().WithField("test_enabled", true),
 	}
 	defer driver.Stop()
 
@@ -108,6 +128,136 @@ func TestDriverSuite(t *testing.T) {
 	}
 
 	sanity.Test(t, cfg)
+}
+
+// fakeHCloudAPI implements a fake, cached Hetzner Cloud API
+type fakeHCloudAPI struct {
+	t       *testing.T
+	volumes map[int]*schema.Volume
+	servers map[int]*schema.Server
+}
+
+func (f *fakeHCloudAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/servers/") {
+		// for now we only do a GET, so we assume it's a GET and don't check
+		// for the method
+		resp := new(schema.ServerGetResponse)
+		id, _ := strconv.Atoi(filepath.Base(r.URL.Path))
+		server, ok := f.servers[id]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+
+			errResp := &schema.ErrorResponse{
+				Error: schema.Error{
+					Code: string(hcloud.ErrorCodeNotFound),
+				},
+			}
+
+			err := json.NewEncoder(w).Encode(&errResp)
+			if err != nil {
+				f.t.Fatalf("error: %s", err)
+			}
+			return
+		}
+		resp.Server = *server
+
+		err := json.NewEncoder(w).Encode(&resp)
+		if err != nil {
+			f.t.Fatalf("error: %s", err)
+		}
+		return
+	}
+
+	// actions always succeeded instantly
+	if strings.HasPrefix(r.URL.Path, "/actions/") {
+		// for now we only do a GET, so we assume it's a GET and don't check
+		// for the method
+		id, _ := strconv.Atoi(filepath.Base(r.URL.Path))
+		resp := &schema.ActionGetResponse{
+			Action: schema.Action{
+				ID:     id,
+				Status: string(hcloud.ActionStatusSuccess),
+			},
+		}
+
+		err := json.NewEncoder(w).Encode(&resp)
+		if err != nil {
+			f.t.Fatalf("error: %s", err)
+		}
+		return
+	}
+
+	// rest is /volumes related
+	switch r.Method {
+	case "GET":
+		// A list call
+		if strings.HasPrefix(r.URL.String(), "/volumes?") {
+			volumes := []schema.Volume{}
+			if name := r.URL.Query().Get("name"); name != "" {
+				for _, vol := range f.volumes {
+					if vol.Name == name {
+						volumes = append(volumes, *vol)
+					}
+				}
+			} else {
+				for _, vol := range f.volumes {
+					volumes = append(volumes, *vol)
+				}
+			}
+
+			resp := new(schema.VolumeListResponse)
+			resp.Volumes = volumes
+
+			err := json.NewEncoder(w).Encode(&resp)
+			if err != nil {
+				f.t.Fatal(err)
+			}
+			return
+
+		} else {
+			resp := new(schema.VolumeGetResponse)
+			// single volume get
+			id, _ := strconv.Atoi(filepath.Base(r.URL.Path))
+			vol, ok := f.volumes[id]
+			if !ok {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				resp.Volume = *vol
+			}
+
+			_ = json.NewEncoder(w).Encode(&resp)
+			return
+		}
+
+	case "POST":
+		v := new(schema.VolumeCreateRequest)
+		err := json.NewDecoder(r.Body).Decode(v)
+		if err != nil {
+			f.t.Fatal(err)
+		}
+
+		id := rand.Int()
+		vol := &schema.Volume{
+			ID:      id,
+			Name:    v.Name,
+			Size:    v.Size,
+			Created: time.Now().UTC(),
+		}
+
+		f.volumes[id] = vol
+
+		resp := &schema.VolumeCreateResponse{
+			Volume: *vol,
+		}
+
+		err = json.NewEncoder(w).Encode(&resp)
+		if err != nil {
+			f.t.Fatal(err)
+		}
+	case "DELETE":
+		id, _ := strconv.Atoi(filepath.Base(r.URL.Path))
+		delete(f.volumes, id)
+	}
 }
 
 // fakeAPI implements a fake, cached DO API

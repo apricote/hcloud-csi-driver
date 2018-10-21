@@ -1,5 +1,6 @@
 /*
 Copyright 2018 DigitalOcean
+Copyright 2018 Julian Tölle
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,15 +29,14 @@ import (
 	"sync"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi/v0"
-	metadata "github.com/digitalocean/go-metadata"
 	"github.com/digitalocean/godo"
+	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 )
 
 const (
-	driverName = "com.digitalocean.csi.dobs"
+	driverName = "de.apricote.hcloud.csi.volumes"
 )
 
 var (
@@ -53,13 +53,15 @@ var (
 //
 type Driver struct {
 	endpoint string
-	nodeId   string
+	nodeID   string
+	hostname string
 	region   string
 
-	srv      *grpc.Server
-	doClient *godo.Client
-	mounter  Mounter
-	log      *logrus.Entry
+	srv          *grpc.Server
+	doClient     *godo.Client
+	hcloudClient *hcloud.Client
+	mounter      Mounter
+	log          *logrus.Entry
 
 	// ready defines whether the driver is ready to function. This value will
 	// be used by the `Identity` service via the `Probe()` method.
@@ -69,42 +71,40 @@ type Driver struct {
 
 // NewDriver returns a CSI plugin that contains the necessary gRPC
 // interfaces to interact with Kubernetes over unix domain sockets for
-// managaing DigitalOcean Block Storage
-func NewDriver(ep, token, url string) (*Driver, error) {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{
-		AccessToken: token,
-	})
-	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
+// managaing Hetzner Cloud Volumes
+func NewDriver(ep, token, url, region string) (*Driver, error) {
 
-	all, err := metadata.NewClient().Metadata()
+	hcloudClient := hcloud.NewClient(
+		hcloud.WithToken(token),
+		hcloud.WithApplication("hcloud-csi-driver", version),
+		hcloud.WithEndpoint(url))
+
+	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get metadata: %s", err)
+		return nil, fmt.Errorf("couldn't get hostname: %s", err)
 	}
 
-	region := all.Region
-	nodeId := strconv.Itoa(all.DropletID)
-
-	opts := []godo.ClientOpt{}
-	opts = append(opts, godo.SetBaseURL(url))
-
-	doClient, err := godo.New(oauthClient, opts...)
+	server, _, err := hcloudClient.Server.GetByName(context.TODO(), hostname)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't initialize DigitalOcean client: %s", err)
+		return nil, fmt.Errorf("could not get hcloud server by hostname: %s", err)
 	}
+
+	nodeID := strconv.Itoa(server.ID)
 
 	log := logrus.New().WithFields(logrus.Fields{
-		"region":  region,
-		"node_id": nodeId,
-		"version": version,
+		"region":   region,
+		"hostname": hostname,
+		"version":  version,
 	})
 
 	return &Driver{
-		endpoint: ep,
-		nodeId:   nodeId,
-		region:   region,
-		doClient: doClient,
-		mounter:  newMounter(log),
-		log:      log,
+		endpoint:     ep,
+		hostname:     hostname,
+		nodeID:       nodeID,
+		region:       region,
+		hcloudClient: hcloudClient,
+		mounter:      newMounter(log),
+		log:          log,
 	}, nil
 }
 
@@ -173,10 +173,11 @@ func (d *Driver) Stop() {
 	d.srv.Stop()
 }
 
+// GetVersion returns the current release version, as inserted at build time.
+//
 // When building any packages that import version, pass the build/install cmd
 // ldflags like so:
 //   go build -ldflags "-X github.com/digitalocean/csi-digitalocean/driver.version=0.0.1"
-// GetVersion returns the current release version, as inserted at build time.
 func GetVersion() string {
 	return version
 }
