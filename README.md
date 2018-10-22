@@ -1,18 +1,16 @@
-# csi-digitalocean [![Build Status](https://travis-ci.org/digitalocean/csi-digitalocean.svg?branch=master)](https://travis-ci.org/digitalocean/csi-digitalocean)
+# hcloud-csi-driver [![Build Status](https://travis-ci.org/apricote/hcloud-csi-driver.svg?branch=master)](https://travis-ci.org/apricote/hcloud-csi-driver)
 
-A Container Storage Interface ([CSI](https://github.com/container-storage-interface/spec)) Driver for DigitalOcean Block Storage. The CSI plugin allows you to use DigitalOcean Block Storage with your preferred Container Orchestrator.
+A Container Storage Interface ([CSI](https://github.com/container-storage-interface/spec)) Driver for Hetzner Cloud Volumes. The CSI plugin allows you to use Hetzner Cloud Volumes with your preferred Container Orchestrator.
 
-The DigitalOcean CSI plugin is mostly tested on Kubernetes. Theoretically it
+The Hetzner Cloud CSI plugin is mostly tested on Kubernetes. Theoretically it
 should also work on other Container Orchestrator's, such as Mesos or
 Cloud Foundry. Feel free to test it on other CO's and give us a feedback.
 
 ## Releases
 
-The DigitalOcean CSI plugin follows [semantic versioning](https://semver.org/).
+The Hetzner Cloud CSI plugin follows [semantic versioning](https://semver.org/).
 The current version is: **`v0.2.0`**. This means that the project is still
-under active development and may not be production ready. The plugin will be
-bumped to **`v1.0.0`** once the [DigitalOcean Kubernetes
-product](https://www.digitalocean.com/products/kubernetes/) is released and
+under active development and may not be production ready. The plugin
 will continue following the rules below:
 
 - Bug fixes will be released as a `PATCH` update.
@@ -31,7 +29,7 @@ will continue following the rules below:
 
 `Mount Propagation` is [disabled by
 default](https://github.com/rancher/rke/issues/765) on latest `v2.0.6` version
-of Rancher, which prevents the `csi-digitalocean` to function correctly. To fix
+of Rancher, which prevents the `hcloud-csi-driver` to function correctly. To fix
 the issue temporary, make sure to add the following settings to your cluster
 configuration YAML file:
 
@@ -84,7 +82,7 @@ release](https://github.com/apricote/hcloud-csi-driver/releases). Always use the
 For example, to use the latest stable version (`v0.2.0`) you can execute the following command:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/digitalocean/csi-digitalocean/master/deploy/kubernetes/releases/csi-digitalocean-v0.2.0.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/apricote/hcloud-csi-driver/master/deploy/kubernetes/releases/hcloud-csi-driver-v0.2.0.yaml
 ```
 
 This file will be always updated to point to the latest stable release.
