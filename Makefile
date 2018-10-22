@@ -7,8 +7,8 @@ else
 endif
 COMMIT ?= $(shell git rev-parse HEAD)
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
-LDFLAGS ?= -X github.com/digitalocean/csi-digitalocean/driver.version=${VERSION} -X github.com/digitalocean/csi-digitalocean/driver.commit=${COMMIT} -X github.com/digitalocean/csi-digitalocean/driver.gitTreeState=${GIT_TREE_STATE}
-PKG ?= github.com/digitalocean/csi-digitalocean/cmd/hcloud-csi-driver
+LDFLAGS ?= -X github.com/apricote/hcloud-csi-driver/driver.version=${VERSION} -X github.com/apricote/hcloud-csi-driver/driver.commit=${COMMIT} -X github.com/apricote/hcloud-csi-driver/driver.gitTreeState=${GIT_TREE_STATE}
+PKG ?= github.com/apricote/hcloud-csi-driver/cmd/hcloud-csi-driver
 
 ## Bump the version in the version file. Set BUMP to [ patch | major | minor ]
 BUMP := patch

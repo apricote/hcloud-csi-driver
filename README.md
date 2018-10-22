@@ -1,4 +1,5 @@
 # csi-digitalocean [![Build Status](https://travis-ci.org/digitalocean/csi-digitalocean.svg?branch=master)](https://travis-ci.org/digitalocean/csi-digitalocean)
+
 A Container Storage Interface ([CSI](https://github.com/container-storage-interface/spec)) Driver for DigitalOcean Block Storage. The CSI plugin allows you to use DigitalOcean Block Storage with your preferred Container Orchestrator.
 
 The DigitalOcean CSI plugin is mostly tested on Kubernetes. Theoretically it
@@ -14,19 +15,17 @@ bumped to **`v1.0.0`** once the [DigitalOcean Kubernetes
 product](https://www.digitalocean.com/products/kubernetes/) is released and
 will continue following the rules below:
 
-* Bug fixes will be released as a `PATCH` update.
-* New features (such as CSI spec bumps) will be released as a `MINOR` update.
-* Significant breaking changes makes a `MAJOR` update.
-
+- Bug fixes will be released as a `PATCH` update.
+- New features (such as CSI spec bumps) will be released as a `MINOR` update.
+- Significant breaking changes makes a `MAJOR` update.
 
 ## Installing to Kubernetes
 
 **Requirements:**
 
-* Kubernetes v1.10.5 minimum 
-* `--allow-privileged` flag must be set to true for both the API server and the kubelet
-* (if you use Docker) the Docker daemon of the cluster nodes must allow shared mounts
-
+- Kubernetes v1.10.5 minimum
+- `--allow-privileged` flag must be set to true for both the API server and the kubelet
+- (if you use Docker) the Docker daemon of the cluster nodes must allow shared mounts
 
 ### [Rancher](https://rancher.com/) users:
 
@@ -47,11 +46,10 @@ services:
       feature-gates: MountPropagation=true
 ```
 
-
 #### 1. Create a secret with your DigitalOcean API Access Token:
 
 Replace the placeholder string starting with `a05...` with your own secret and
-save it as `secret.yml`: 
+save it as `secret.yml`:
 
 ```
 apiVersion: v1
@@ -82,7 +80,7 @@ digitalocean          Opaque                                1         18h
 #### 2. Deploy the CSI plugin and sidecars:
 
 Before you continue, be sure to checkout to a [tagged
-release](https://github.com/digitalocean/csi-digitalocean/releases). Always use the [latest stable version](https://github.com/digitalocean/csi-digitalocean/releases/latest) 
+release](https://github.com/apricote/hcloud-csi-driver/releases). Always use the [latest stable version](https://github.com/apricote/hcloud-csi-driver/releases/latest)
 For example, to use the latest stable version (`v0.2.0`) you can execute the following command:
 
 ```
@@ -97,8 +95,8 @@ provisioning. If you're using multiple storage classes you might want to remove
 the annotation from the `csi-storageclass.yaml` and re-deploy it. This is
 based on the [recommended mechanism](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md#recommended-mechanism-for-deploying-csi-drivers-on-kubernetes) of deploying CSI drivers on Kubernetes
 
-*Note that the deployment proposal to Kubernetes is still a work in progress and not all of the written
-features are implemented. When in doubt, open an issue or ask #sig-storage in [Kubernetes Slack](http://slack.k8s.io)*
+_Note that the deployment proposal to Kubernetes is still a work in progress and not all of the written
+features are implemented. When in doubt, open an issue or ask #sig-storage in [Kubernetes Slack](http://slack.k8s.io)_
 
 #### 3. Test and verify:
 
@@ -151,11 +149,10 @@ spec:
   volumes:
     - name: my-do-volume
       persistentVolumeClaim:
-        claimName: csi-pvc 
+        claimName: csi-pvc
 ```
 
 Check if the pod is running successfully:
-
 
 ```
 $ kubectl describe pods/my-csi-app
@@ -176,9 +173,9 @@ hello-world
 
 Requirements:
 
-* Go: min `v1.10.x`
+- Go: min `v1.10.x`
 
-After making your changes, run the unit tests: 
+After making your changes, run the unit tests:
 
 ```
 $ make test
@@ -193,13 +190,11 @@ $ VERSION=dev make publish
 This will create a binary with version `dev` and docker image pushed to
 `digitalocean/do-csi-plugin:dev`
 
-
 To run the integration tests run the following:
 
 ```
 $ KUBECONFIG=$(pwd)/kubeconfig make test-integration
 ```
-
 
 ### Release a new version
 
@@ -218,7 +213,7 @@ $ git push origin
 ```
 
 After it's merged to master, [create a new Github
-release](https://github.com/digitalocean/csi-digitalocean/releases/new) from
+release](https://github.com/apricote/hcloud-csi-driver/releases/new) from
 master with the version `v0.2.0` and then publish a new docker build:
 
 ```
