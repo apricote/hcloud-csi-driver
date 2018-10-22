@@ -1,5 +1,7 @@
 # hcloud-csi-driver [![Build Status](https://travis-ci.org/apricote/hcloud-csi-driver.svg?branch=master)](https://travis-ci.org/apricote/hcloud-csi-driver)
 
+> This driver is based on the excellent CSI Driver for DigitalOcean. You can find the original source at https://github.com/digitalocean/csi-digitalocean.
+
 A Container Storage Interface ([CSI](https://github.com/container-storage-interface/spec)) Driver for Hetzner Cloud Volumes. The CSI plugin allows you to use Hetzner Cloud Volumes with your preferred Container Orchestrator.
 
 The Hetzner Cloud CSI plugin is mostly tested on Kubernetes. Theoretically it
