@@ -28,7 +28,7 @@ import (
 func main() {
 	var (
 		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/de.apricote.hcloud.csi.volumes/csi.sock", "CSI endpoint")
-		token    = flag.String("token", "", "DigitalOcean access token")
+		token    = flag.String("token", "", "Hetzner Cloud access token")
 		url      = flag.String("url", "https://api.hetzner.cloud/v1", "Hetzner Cloud API URL")
 		region   = flag.String("region", "", "Hetzner Cloud Region")
 		version  = flag.Bool("version", false, "Print the version and exit.")

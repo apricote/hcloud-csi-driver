@@ -42,7 +42,6 @@ const (
 const (
 	defaultVolumeSizeInGB = 16 * GB
 
-	createdByDO     = "Created by DigitalOcean CSI driver"
 	createdByHCloud = "hcloud-csi-driver"
 )
 
@@ -652,8 +651,7 @@ func (d *Driver) checkLimit(ctx context.Context) error {
 }
 
 // validateCapabilities validates the requested capabilities. It returns false
-// if it doesn't satisfy the currently supported modes of DigitalOcean Block
-// Storage
+// if it doesn't satisfy the currently supported modes of Hetzner Cloud Volumes
 func validateCapabilities(caps []*csi.VolumeCapability) bool {
 	vcaps := []*csi.VolumeCapability_AccessMode{supportedAccessMode}
 
