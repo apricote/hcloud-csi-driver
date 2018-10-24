@@ -41,6 +41,7 @@ const (
 
 const (
 	defaultVolumeSizeInGB = 16 * GB
+	minVolumeSizeInGB     = 10 * GB
 
 	createdByHCloud = "hcloud-csi-driver"
 )
@@ -67,13 +68,13 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	if req.AccessibilityRequirements != nil {
 		for _, t := range req.AccessibilityRequirements.Requisite {
-			region, ok := t.Segments["region"]
+			location, ok := t.Segments["location"]
 			if !ok {
 				continue // nothing to do
 			}
 
-			if region != d.region {
-				return nil, status.Errorf(codes.ResourceExhausted, "volume can be only created in region: %q, got: %q", d.region, region)
+			if location != d.location {
+				return nil, status.Errorf(codes.ResourceExhausted, "volume can be only created in location: %q, got: %q", d.location, location)
 
 			}
 		}
@@ -124,7 +125,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		Name: volumeName,
 		Size: int(size / GB),
 		Location: &hcloud.Location{
-			Name: d.region,
+			Name: d.location,
 		},
 		Labels: map[string]string{
 			"createdBy": createdByHCloud,
@@ -133,6 +134,11 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	if !validateCapabilities(req.VolumeCapabilities) {
 		return nil, status.Error(codes.AlreadyExists, "invalid volume capabilities requested. Only SINGLE_NODE_WRITER is supported ('accessModes.ReadWriteOnce' on Kubernetes)")
+	}
+
+	ll.Info("verify volume size is allowed")
+	if size < minVolumeSizeInGB {
+		return nil, status.Errorf(codes.OutOfRange, "requested volume size %d GB is lower than supported minimum of %d GB", size/GB, minVolumeSizeInGB/GB)
 	}
 
 	ll.Info("checking volume limit")
@@ -156,7 +162,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			AccessibleTopology: []*csi.Topology{
 				{
 					Segments: map[string]string{
-						"region": d.region,
+						"location": d.location,
 					},
 				},
 			},
@@ -411,13 +417,13 @@ func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 
 	if req.AccessibleTopology != nil {
 		for _, t := range req.AccessibleTopology {
-			region, ok := t.Segments["region"]
+			location, ok := t.Segments["location"]
 			if !ok {
 				continue // nothing to do
 			}
 
-			if region != d.region {
-				// return early if a different region is expected
+			if location != d.location {
+				// return early if a different location is expected
 				ll.WithField("supported", false).Info("supported capabilities")
 				return &csi.ValidateVolumeCapabilitiesResponse{
 					Supported: false,
@@ -426,7 +432,7 @@ func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.Valida
 		}
 	}
 
-	// if it's not supported (i.e: wrong region), we shouldn't override it
+	// if it's not supported (i.e: wrong location), we shouldn't override it
 	resp := &csi.ValidateVolumeCapabilitiesResponse{
 		Supported: validateCapabilities(req.VolumeCapabilities),
 	}

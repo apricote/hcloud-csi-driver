@@ -13,7 +13,7 @@ Cloud Foundry. Feel free to test it on other CO's and give us a feedback.
 ## Releases
 
 The Hetzner Cloud CSI plugin follows [semantic versioning](https://semver.org/).
-The current version is: **`v0.2.0`**. This means that the project is still
+The current version is: **`v0.0.1`**. This means that the project is still
 under active development and may not be production ready. The plugin
 will continue following the rules below:
 
@@ -48,7 +48,7 @@ services:
       feature-gates: MountPropagation=true
 ```
 
-#### 1. Create a secret with your DigitalOcean API Access Token:
+#### 1. Create a secret with your Hetzner Cloud API Access Token:
 
 Replace the placeholder string starting with `a05...` with your own secret and
 save it as `secret.yml`:
@@ -57,7 +57,7 @@ save it as `secret.yml`:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: digitalocean
+  name: hcloud
   namespace: kube-system
 stringData:
   access-token: "a05dd2f26b9b9ac2asdas__REPLACE_ME____123cb5d1ec17513e06da"
@@ -67,35 +67,35 @@ and create the secret using kubectl:
 
 ```
 $ kubectl create -f ./secret.yml
-secret "digitalocean" created
+secret "hcloud" created
 ```
 
-You should now see the digitalocean secret in the `kube-system` namespace along with other secrets
+You should now see the hcloud secret in the `kube-system` namespace along with other secrets
 
 ```
 $ kubectl -n kube-system get secrets
 NAME                  TYPE                                  DATA      AGE
 default-token-jskxx   kubernetes.io/service-account-token   3         18h
-digitalocean          Opaque                                1         18h
+hcloud                Opaque                                1         18h
 ```
 
 #### 2. Deploy the CSI plugin and sidecars:
 
 Before you continue, be sure to checkout to a [tagged
 release](https://github.com/apricote/hcloud-csi-driver/releases). Always use the [latest stable version](https://github.com/apricote/hcloud-csi-driver/releases/latest)
-For example, to use the latest stable version (`v0.2.0`) you can execute the following command:
+For example, to use the latest stable version (`v0.0.1`) you can execute the following command:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/apricote/hcloud-csi-driver/master/deploy/kubernetes/releases/hcloud-csi-driver-v0.2.0.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/apricote/hcloud-csi-driver/master/deploy/kubernetes/releases/hcloud-csi-driver-v0.0.1.yaml
 ```
 
 This file will be always updated to point to the latest stable release.
 
-A new storage class will be created with the name `do-block-storage` which is
-responsible for dynamic provisioning. This is set to **"default"** for dynamic
-provisioning. If you're using multiple storage classes you might want to remove
-the annotation from the `csi-storageclass.yaml` and re-deploy it. This is
-based on the [recommended mechanism](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md#recommended-mechanism-for-deploying-csi-drivers-on-kubernetes) of deploying CSI drivers on Kubernetes
+A new storage class will be created with the name `hcloud-volumes` which
+is responsible for dynamic provisioning. This is set to **"default"** for
+dynamic provisioning. If you're using multiple storage classes you might want
+to remove the annotation from the `csi-storageclass.yaml` and re-deploy it.
+This is based on the [recommended mechanism](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md#recommended-mechanism-for-deploying-csi-drivers-on-kubernetes) of deploying CSI drivers on Kubernetes
 
 _Note that the deployment proposal to Kubernetes is still a work in progress and not all of the written
 features are implemented. When in doubt, open an issue or ask #sig-storage in [Kubernetes Slack](http://slack.k8s.io)_
@@ -114,8 +114,8 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
-  storageClassName: do-block-storage
+      storage: 10Gi
+  storageClassName: hcloud-volumes
 ```
 
 Check that a new `PersistentVolume` is created based on your claim:
@@ -123,12 +123,12 @@ Check that a new `PersistentVolume` is created based on your claim:
 ```
 $ kubectl get pv
 NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS    CLAIM             STORAGECLASS       REASON    AGE
-pvc-0879b207-9558-11e8-b6b4-5218f75c62b9   5Gi        RWO            Delete           Bound     default/csi-pvc   do-block-storage             3m
+pvc-0879b207-9558-11e8-b6b4-5218f75c62b9   10Gi       RWO            Delete           Bound     default/csi-pvc   hcloud-volumes             3m
 ```
 
 The above output means that the CSI plugin successfully created (provisioned) a
 new Volume on behalf of you. You should be able to see this newly created
-volume under the [Volumes tab in the DigitalOcean UI](https://cloud.digitalocean.com/droplets/volumes)
+volume under the Volumes tab in the Hetzner Cloud UI.
 
 The volume is not attached to any node yet. It'll only attached to a node if a
 workload (i.e: pod) is scheduled to a specific node. Now let us create a Pod
@@ -190,7 +190,7 @@ $ VERSION=dev make publish
 ```
 
 This will create a binary with version `dev` and docker image pushed to
-`digitalocean/do-csi-plugin:dev`
+`apricote/hcloud-csi-driver:dev`
 
 To run the integration tests run the following:
 
@@ -216,17 +216,16 @@ $ git push origin
 
 After it's merged to master, [create a new Github
 release](https://github.com/apricote/hcloud-csi-driver/releases/new) from
-master with the version `v0.2.0` and then publish a new docker build:
+master with the version `v0.0.1` and then publish a new docker build:
 
 ```
 $ git checkout master
 $ make publish
 ```
 
-This will create a binary with version `v0.2.0` and docker image pushed to
-`digitalocean/do-csi-plugin:v0.2.0`
+This will create a binary with version `v0.0.1` and docker image pushed to
+`apricote/hcloud-csi-driver:v0.0.1`
 
 ## Contributing
 
-At DigitalOcean we value and love our community! If you have any issues or
-would like to contribute, feel free to open an issue/PR
+If you have any issues or would like to contribute, feel free to open an issue/PR

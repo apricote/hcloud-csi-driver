@@ -66,7 +66,7 @@ func TestDriverSuite(t *testing.T) {
 	driver := &Driver{
 		endpoint:     endpoint,
 		nodeID:       strconv.Itoa(serverID),
-		region:       "fsn1",
+		location:     "fsn1",
 		hcloudClient: hcloudClient,
 		mounter:      &fakeMounter{},
 		log:          logrus.New().WithField("test_enabled", true),

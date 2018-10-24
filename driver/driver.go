@@ -54,7 +54,7 @@ type Driver struct {
 	endpoint string
 	nodeID   string
 	hostname string
-	region   string
+	location string
 
 	srv          *grpc.Server
 	hcloudClient *hcloud.Client
@@ -70,27 +70,23 @@ type Driver struct {
 // NewDriver returns a CSI plugin that contains the necessary gRPC
 // interfaces to interact with Kubernetes over unix domain sockets for
 // managaing Hetzner Cloud Volumes
-func NewDriver(ep, token, url, region string) (*Driver, error) {
+func NewDriver(ep, token, url, hostname string) (*Driver, error) {
 
 	hcloudClient := hcloud.NewClient(
 		hcloud.WithToken(token),
 		hcloud.WithApplication("hcloud-csi-driver", version),
 		hcloud.WithEndpoint(url))
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get hostname: %s", err)
-	}
-
 	server, _, err := hcloudClient.Server.GetByName(context.TODO(), hostname)
 	if err != nil {
 		return nil, fmt.Errorf("could not get hcloud server by hostname: %s", err)
 	}
 
+	location := server.Datacenter.Location.Name
 	nodeID := strconv.Itoa(server.ID)
 
 	log := logrus.New().WithFields(logrus.Fields{
-		"region":   region,
+		"location": location,
 		"hostname": hostname,
 		"version":  version,
 	})
@@ -99,7 +95,7 @@ func NewDriver(ep, token, url, region string) (*Driver, error) {
 		endpoint:     ep,
 		hostname:     hostname,
 		nodeID:       nodeID,
-		region:       region,
+		location:     location,
 		hcloudClient: hcloudClient,
 		mounter:      newMounter(log),
 		log:          log,

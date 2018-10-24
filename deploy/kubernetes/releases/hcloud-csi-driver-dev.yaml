@@ -1,36 +1,34 @@
 # Copyright 2018 DigitalOcean
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
-# Configuration to deploy release version of the CSI DigitalOcean
-# plugin (https://github.com/digitalocean/csi-digitalocean) compatible with
+
+# Configuration to deploy release version of the CSI Hetzner Cloud
+# plugin (https://github.com/apricote/hcloud-csi-driver) compatible with
 # Kubernetes >=v1.10.5
 #
 # example usage: kubectl create -f <this_file>
 
 ---
-
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: do-block-storage
+  name: hcloud-volumes
   namespace: kube-system
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
-provisioner: com.digitalocean.csi.dobs
+provisioner: de.apricote.hcloud.csi.volumes
 
 ---
-
 ##############################################
 ###########                       ############
 ###########   Controller plugin   ############
@@ -40,23 +38,23 @@ provisioner: com.digitalocean.csi.dobs
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
-  name: csi-do-controller
+  name: csi-hcloud-controller
   namespace: kube-system
 spec:
-  serviceName: "csi-do"
+  serviceName: "csi-hcloud"
   replicas: 1
   template:
     metadata:
       labels:
-        app: csi-do-controller
-        role: csi-do
+        app: csi-hcloud-controller
+        role: csi-hcloud
     spec:
-      serviceAccount: csi-do-controller-sa
+      serviceAccount: csi-hcloud-controller-sa
       containers:
         - name: csi-provisioner
           image: quay.io/k8scsi/csi-provisioner:v0.3.0
           args:
-            - "--provisioner=com.digitalocean.csi.dobs"
+            - "--provisioner=de.apricote.hcloud.csi.volumes"
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
           env:
@@ -78,21 +76,26 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
-        - name: csi-do-plugin
-          image: digitalocean/do-csi-plugin:dev
-          args :
+        - name: csi-hcloud-plugin
+          image: apricote/hcloud-csi-driver:dev
+          args:
             - "--endpoint=$(CSI_ENDPOINT)"
-            - "--token=$(DIGITALOCEAN_ACCESS_TOKEN)"
-            - "--url=$(DIGITALOCEAN_API_URL)"
+            - "--token=$(HCLOUD_ACCESS_TOKEN)"
+            - "--url=$(HCLOUD_API_URL)"
+            - "--hostname=$(KUBE_NODE_NAME)"
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
-            - name: DIGITALOCEAN_API_URL
-              value: https://api.digitalocean.com/
-            - name: DIGITALOCEAN_ACCESS_TOKEN
+            - name: HCLOUD_API_URL
+              value: https://api.hetzner.cloud/v1
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HCLOUD_ACCESS_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: digitalocean
+                  name: hcloud
                   key: access-token
           imagePullPolicy: "Always"
           volumeMounts:
@@ -102,23 +105,21 @@ spec:
         - name: socket-dir
           emptyDir: {}
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: csi-do-controller-sa
+  name: csi-hcloud-controller-sa
   namespace: kube-system
 
 ---
-
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-do-controller-provisioner-binding
+  name: csi-hcloud-controller-provisioner-binding
   namespace: kube-system
 subjects:
   - kind: ServiceAccount
-    name: csi-do-controller-sa
+    name: csi-hcloud-controller-sa
     namespace: kube-system
 roleRef:
   kind: ClusterRole
@@ -126,15 +127,14 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-do-controller-attacher-binding
+  name: csi-hcloud-controller-attacher-binding
   namespace: kube-system
 subjects:
   - kind: ServiceAccount
-    name: csi-do-controller-sa
+    name: csi-hcloud-controller-sa
     namespace: kube-system
 roleRef:
   kind: ClusterRole
@@ -142,8 +142,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-
-
 ########################################
 ###########                 ############
 ###########   Node plugin   ############
@@ -153,19 +151,19 @@ roleRef:
 kind: DaemonSet
 apiVersion: apps/v1beta2
 metadata:
-  name: csi-do-node
+  name: csi-hcloud-node
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      app: csi-do-node
+      app: csi-hcloud-node
   template:
     metadata:
       labels:
-        app: csi-do-node
-        role: csi-do
+        app: csi-hcloud-node
+        role: csi-hcloud
     spec:
-      serviceAccount: csi-do-node-sa
+      serviceAccount: csi-hcloud-node-sa
       hostNetwork: true
       containers:
         - name: driver-registrar
@@ -186,21 +184,26 @@ spec:
               # TODO(arslan): the registrar is not implemented yet
               # - name: registrar-socket-dir
               #   mountPath: /var/lib/csi/sockets/
-        - name: csi-do-plugin
-          image: digitalocean/do-csi-plugin:dev
-          args :
+        - name: csi-hcloud-plugin
+          image: apricote/hcloud-csi-driver:dev
+          args:
             - "--endpoint=$(CSI_ENDPOINT)"
-            - "--token=$(DIGITALOCEAN_ACCESS_TOKEN)"
-            - "--url=$(DIGITALOCEAN_API_URL)"
+            - "--token=$(HCLOUD_ACCESS_TOKEN)"
+            - "--url=$(HCLOUD_API_URL)"
+            - "--hostname=$(KUBE_NODE_NAME)"
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
-            - name: DIGITALOCEAN_API_URL
-              value: https://api.digitalocean.com/
-            - name: DIGITALOCEAN_ACCESS_TOKEN
+            - name: HCLOUD_API_URL
+              value: https://api.hetzner.cloud/v1
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HCLOUD_ACCESS_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: digitalocean
+                  name: hcloud
                   key: access-token
           imagePullPolicy: "Always"
           securityContext:
@@ -226,7 +229,7 @@ spec:
         #    type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins/com.digitalocean.csi.dobs
+            path: /var/lib/kubelet/plugins/de.apricote.hcloud.csi.volumes
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:
@@ -236,36 +239,32 @@ spec:
           hostPath:
             path: /dev
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: csi-do-node-sa
+  name: csi-hcloud-node-sa
   namespace: kube-system
 
 ---
-
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-do-driver-registrar-binding
+  name: csi-hcloud-driver-registrar-binding
   namespace: kube-system
 subjects:
   - kind: ServiceAccount
-    name: csi-do-node-sa
+    name: csi-hcloud-node-sa
     namespace: kube-system
 roleRef:
   kind: ClusterRole
-  name: csi-do-driver-registrar-role
-  apiGroup: rbac.authorization.k8s.io          
-
+  name: csi-hcloud-driver-registrar-role
+  apiGroup: rbac.authorization.k8s.io
 
 ---
-
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-do-driver-registrar-role
+  name: csi-hcloud-driver-registrar-role
   namespace: kube-system
 rules:
   - apiGroups: [""]
@@ -274,4 +273,3 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
-

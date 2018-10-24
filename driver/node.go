@@ -27,7 +27,6 @@ package driver
 import (
 	"context"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi/v0"
@@ -37,11 +36,8 @@ import (
 )
 
 const (
-	diskIDPath   = "/dev/disk/by-id"
-	diskHCPrefix = "scsi-0HC_Volume_"
-
-	// See: https://www.digitalocean.com/docs/volumes/overview/#limits
-	maxVolumesPerNode = 7
+	// See: https://wiki.hetzner.de/index.php/CloudServer/en#Is_there_a_limit_on_the_number_of_attached_volumes.3F
+	maxVolumesPerNode = 5
 
 	// This annotation is added to a PV to indicate that the volume should be
 	// not formatted. Useful for cases if the user wants to reuse an existing
@@ -83,7 +79,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		// return nil, err
 	}
 
-	source := getDiskSource(vol.Name)
+	source := vol.LinuxDevice
 	target := req.StagingTargetPath
 
 	mnt := req.VolumeCapability.GetMount()
@@ -321,17 +317,11 @@ func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 		NodeId:            d.nodeID,
 		MaxVolumesPerNode: maxVolumesPerNode,
 
-		// make sure that the driver works on this particular region only
+		// make sure that the driver works on this particular location only
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
-				"region": d.region,
+				"location": d.location,
 			},
 		},
 	}, nil
-}
-
-// getDiskSource returns the absolute path of the attached volume for the given
-// HC volume name
-func getDiskSource(volumeName string) string {
-	return filepath.Join(diskIDPath, diskHCPrefix+volumeName)
 }

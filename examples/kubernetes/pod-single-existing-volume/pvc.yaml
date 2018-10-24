@@ -4,8 +4,8 @@ metadata:
   name: csi-pod-pvc
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
-  storageClassName: do-block-storage
+      storage: 10Gi
+  storageClassName: hcloud-volumes

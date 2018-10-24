@@ -30,7 +30,7 @@ func main() {
 		endpoint = flag.String("endpoint", "unix:///var/lib/kubelet/plugins/de.apricote.hcloud.csi.volumes/csi.sock", "CSI endpoint")
 		token    = flag.String("token", "", "Hetzner Cloud access token")
 		url      = flag.String("url", "https://api.hetzner.cloud/v1", "Hetzner Cloud API URL")
-		region   = flag.String("region", "", "Hetzner Cloud Region")
+		hostname = flag.String("hostname", "", "Name of the current node")
 		version  = flag.Bool("version", false, "Print the version and exit.")
 	)
 	flag.Parse()
@@ -40,7 +40,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	drv, err := driver.NewDriver(*endpoint, *token, *url, *region)
+	drv, err := driver.NewDriver(*endpoint, *token, *url, *hostname)
 
 	if err != nil {
 		log.Fatalln(err)

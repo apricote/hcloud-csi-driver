@@ -101,10 +101,10 @@ func TestPod_Single_Volume(t *testing.T) {
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("5Gi"),
+					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: strPtr("do-block-storage"),
+			StorageClassName: strPtr("hcloud-volumes"),
 		},
 	}
 
@@ -195,10 +195,10 @@ func TestDeployment_Single_Volume(t *testing.T) {
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("5Gi"),
+					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: strPtr("do-block-storage"),
+			StorageClassName: strPtr("hcloud-volumes"),
 		},
 	}
 
@@ -304,10 +304,10 @@ func TestPod_Multi_Volume(t *testing.T) {
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("5Gi"),
+					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: strPtr("do-block-storage"),
+			StorageClassName: strPtr("hcloud-volumes"),
 		},
 	}
 	_, err = client.CoreV1().PersistentVolumeClaims(namespace).Create(pvc1)
@@ -326,10 +326,10 @@ func TestPod_Multi_Volume(t *testing.T) {
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("5Gi"),
+					v1.ResourceStorage: resource.MustParse("10Gi"),
 				},
 			},
-			StorageClassName: strPtr("do-block-storage"),
+			StorageClassName: strPtr("hcloud-volumes"),
 		},
 	}
 	_, err = client.CoreV1().PersistentVolumeClaims(namespace).Create(pvc2)

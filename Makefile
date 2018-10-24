@@ -27,7 +27,7 @@ bump-version:
 	@cp deploy/kubernetes/releases/hcloud-csi-driver-${VERSION}.yaml deploy/kubernetes/releases/hcloud-csi-driver-${NEW_VERSION}.yaml
 	@sed -i'' -e 's/${VERSION}/${NEW_VERSION}/g' deploy/kubernetes/releases/hcloud-csi-driver-${NEW_VERSION}.yaml
 	@sed -i'' -e 's/${VERSION}/${NEW_VERSION}/g' README.md
-	$(eval NEW_DATE = $(shell date +%Y.%m.%d))
+	$(eval NEW_DATE = $(shell date +%Y-%m-%d))
 	@sed -i'' -e 's/## unreleased/## ${NEW_VERSION} - ${NEW_DATE}/g' CHANGELOG.md 
 	@ echo '## unreleased\n' | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
 	@rm README.md-e CHANGELOG.md-e deploy/kubernetes/releases/hcloud-csi-driver-${NEW_VERSION}.yaml-e
