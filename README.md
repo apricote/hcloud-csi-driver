@@ -1,3 +1,5 @@
+## DEPRECATION WARNING: This Driver is deprecated in favor of the [official driver by Hetzner Cloud](https://github.com/hetznercloud/csi-driver).
+
 # hcloud-csi-driver [![Build Status](https://travis-ci.org/apricote/hcloud-csi-driver.svg?branch=master)](https://travis-ci.org/apricote/hcloud-csi-driver)
 
 > This driver is based on the excellent CSI Driver for DigitalOcean. You can find the original source at https://github.com/digitalocean/csi-digitalocean.
