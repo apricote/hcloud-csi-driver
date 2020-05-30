@@ -27,6 +27,7 @@ will continue following the rules below:
 
 - Kubernetes v1.10.5 minimum
 - `--allow-privileged` flag must be set to true for both the API server and the kubelet
+- `--feature-gates=KubeletPluginsWatcher=true,CSINodeInfo=true,CSIDriverRegistry=true` feature gate flags must be set to true for both the API server and the kubelet
 - (if you use Docker) the Docker daemon of the cluster nodes must allow shared mounts
 
 ### [Rancher](https://rancher.com/) users:
@@ -41,11 +42,11 @@ configuration YAML file:
 services:
   kube-api:
     extra_args:
-      feature-gates: MountPropagation=true
+      feature-gates: "MountPropagation=true,KubeletPluginsWatcher=true,CSINodeInfo=true,CSIDriverRegistry=true"
 
   kubelet:
     extra_args:
-      feature-gates: MountPropagation=true
+      feature-gates: "MountPropagation=true,KubeletPluginsWatcher=true,CSINodeInfo=true,CSIDriverRegistry=true"
 ```
 
 #### 1. Create a secret with your Hetzner Cloud API Access Token:
